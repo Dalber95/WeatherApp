@@ -33,13 +33,17 @@ class MainActivity : AppCompatActivity() {
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
 
         if (!isLocationEnabled()) {
-            Toast.makeText(this, "Your location provider is turned off. Please turn it on.", Toast.LENGTH_SHORT).show()
+            Toast.makeText(
+                this,
+                "Your location provider is turned off. Please turn it on.",
+                Toast.LENGTH_SHORT
+            ).show()
             val intent = Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS)
             startActivity(intent)
         } else {
             Dexter.withActivity(this).withPermissions(
-                    Manifest.permission.ACCESS_FINE_LOCATION,
-                    Manifest.permission.ACCESS_COARSE_LOCATION
+                Manifest.permission.ACCESS_FINE_LOCATION,
+                Manifest.permission.ACCESS_COARSE_LOCATION
             ).withListener(object : MultiplePermissionsListener {
                 override fun onPermissionsChecked(report: MultiplePermissionsReport?) {
                     if (report!!.areAllPermissionsGranted()) {
@@ -47,11 +51,18 @@ class MainActivity : AppCompatActivity() {
                     }
 
                     if (report.isAnyPermissionPermanentlyDenied) {
-                        Toast.makeText(this@MainActivity, "You have denied location permission. Please enable them as it is mandatory for the app to work.", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(
+                            this@MainActivity,
+                            "You have denied location permission. Please enable them as it is mandatory for the app to work.",
+                            Toast.LENGTH_SHORT
+                        ).show()
                     }
                 }
 
-                override fun onPermissionRationaleShouldBeShown(permissions: MutableList<PermissionRequest>?, token: PermissionToken?) {
+                override fun onPermissionRationaleShouldBeShown(
+                    permissions: MutableList<PermissionRequest>?,
+                    token: PermissionToken?
+                ) {
                     showRationalDialogForPermissions()
                 }
             }).onSameThread().check()
@@ -63,7 +74,11 @@ class MainActivity : AppCompatActivity() {
         val locationRequest = LocationRequest()
         locationRequest.priority = LocationRequest.PRIORITY_HIGH_ACCURACY
 
-        fusedLocationClient.requestLocationUpdates(locationRequest, locationCallback, Looper.myLooper())
+        fusedLocationClient.requestLocationUpdates(
+            locationRequest,
+            locationCallback,
+            Looper.myLooper()
+        )
     }
 
     private val locationCallback = object : LocationCallback() {
@@ -74,29 +89,41 @@ class MainActivity : AppCompatActivity() {
 
             val longitude = lastLocation.longitude
             Log.i("Current Longitude", "$longitude")
+            getLocationWeatherDetails()
+        }
+    }
+
+    private fun getLocationWeatherDetails() {
+        if (Constants.isNetworkAvailable(this)) {
+            Toast.makeText(this@MainActivity, "You have connected to the internet. Now you can make an", Toast.LENGTH_SHORT).show()
+        } else {
+            Toast.makeText(this@MainActivity, "No internet connection available.", Toast.LENGTH_SHORT).show()
         }
     }
 
     private fun showRationalDialogForPermissions() {
         AlertDialog.Builder(this)
-                .setMessage("It looks like you have turned off permissions required for this feature. It can be enabled under Application Settings")
-                .setPositiveButton("GO TO SETTINGS") { _, _ ->
-                    try {
-                        val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
-                        val uri = Uri.fromParts("package", packageName, null)
-                        intent.data = uri
-                        startActivity(intent)
-                    } catch (e: ActivityNotFoundException) {
-                        e.printStackTrace()
-                    }
+            .setMessage("It looks like you have turned off permissions required for this feature. It can be enabled under Application Settings")
+            .setPositiveButton("GO TO SETTINGS") { _, _ ->
+                try {
+                    val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
+                    val uri = Uri.fromParts("package", packageName, null)
+                    intent.data = uri
+                    startActivity(intent)
+                } catch (e: ActivityNotFoundException) {
+                    e.printStackTrace()
                 }
-                .setNegativeButton("Cancel") { dialog, _ ->
-                    dialog.dismiss()
-                }.show()
+            }
+            .setNegativeButton("Cancel") { dialog, _ ->
+                dialog.dismiss()
+            }.show()
     }
 
     private fun isLocationEnabled(): Boolean {
-        val locationManager: LocationManager = getSystemService(Context.LOCATION_SERVICE) as LocationManager
-        return locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER) || locationManager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)
+        val locationManager: LocationManager =
+            getSystemService(Context.LOCATION_SERVICE) as LocationManager
+        return locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER) || locationManager.isProviderEnabled(
+            LocationManager.NETWORK_PROVIDER
+        )
     }
 }

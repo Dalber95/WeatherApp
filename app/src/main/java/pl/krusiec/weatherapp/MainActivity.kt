@@ -2,6 +2,7 @@ package pl.krusiec.weatherapp
 
 import android.Manifest
 import android.annotation.SuppressLint
+import android.app.Dialog
 import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
@@ -28,6 +29,8 @@ import retrofit.*
 class MainActivity : AppCompatActivity() {
 
     private lateinit var fusedLocationClient: FusedLocationProviderClient
+
+    private var progressDialog: Dialog? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -98,21 +101,28 @@ class MainActivity : AppCompatActivity() {
 
     private fun getLocationWeatherDetails(latitude: Double, longitude: Double) {
         if (Constants.isNetworkAvailable(this)) {
-            val retrofit: Retrofit = Retrofit.Builder().baseUrl(Constants.BASE_URL).addConverterFactory(GsonConverterFactory.create()).build()
+            val retrofit: Retrofit = Retrofit.Builder().baseUrl(Constants.BASE_URL)
+                .addConverterFactory(GsonConverterFactory.create()).build()
             val service: WeatherService = retrofit.create(WeatherService::class.java)
-            val listCall: Call<WeatherResponse> = service.getWeather(latitude, longitude, Constants.METRIC_UNIT, Constants.APP_ID)
-            listCall.enqueue(object: Callback<WeatherResponse>{
+            val listCall: Call<WeatherResponse> =
+                service.getWeather(latitude, longitude, Constants.METRIC_UNIT, Constants.APP_ID)
+
+            showCustomProgressDialog()
+
+            listCall.enqueue(object : Callback<WeatherResponse> {
                 override fun onFailure(t: Throwable?) {
                     Log.e("Error", t!!.message.toString())
+                    hideProgressDialog()
                 }
 
                 override fun onResponse(response: Response<WeatherResponse>?, retrofit: Retrofit?) {
-                    if (response!!.isSuccess){
+                    if (response!!.isSuccess) {
+                        hideProgressDialog()
                         val weatherList: WeatherResponse = response.body()
                         Log.i("Response Result", "$weatherList")
                     } else {
                         val rc = response.code()
-                        when(rc){
+                        when (rc) {
                             400 -> Log.e("Error 400", "Bad Connection")
                             404 -> Log.e("Error 404", "Not Found")
                             else -> Log.e("Error", "Generic Error")
@@ -121,7 +131,11 @@ class MainActivity : AppCompatActivity() {
                 }
             })
         } else {
-            Toast.makeText(this@MainActivity, "No internet connection available.", Toast.LENGTH_SHORT).show()
+            Toast.makeText(
+                this@MainActivity,
+                "No internet connection available.",
+                Toast.LENGTH_SHORT
+            ).show()
         }
     }
 
@@ -149,5 +163,17 @@ class MainActivity : AppCompatActivity() {
         return locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER) || locationManager.isProviderEnabled(
             LocationManager.NETWORK_PROVIDER
         )
+    }
+
+    private fun showCustomProgressDialog() {
+        progressDialog = Dialog(this)
+        progressDialog!!.setContentView(R.layout.dialog_custom_progress)
+        progressDialog!!.show()
+    }
+
+    private fun hideProgressDialog() {
+        if (progressDialog != null) {
+            progressDialog!!.dismiss()
+        }
     }
 }
